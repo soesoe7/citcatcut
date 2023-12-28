@@ -2,31 +2,36 @@
 rule-providers:
   Rule-Direct:
     type: http
-    behavior: classical
+    behavior: domain
+    format: yaml
     path: "./rule_provider/direct.yaml"
     url: https://raw.githubusercontent.com/soesoe7/citcatcut/main/rule_provider/direct.yaml
     interval: 86400
   Rule-Reject:
     type: http
-    behavior: classical
+    behavior: domain
+    format: yaml
     path: "./rule_provider/reject.yaml"
     url: https://raw.githubusercontent.com/soesoe7/citcatcut/main/rule_provider/reject.yaml
     interval: 86400
   Rule-Sosmed:
     type: http
-    behavior: classical
+    behavior: domain
+    format: yaml
     path: "./rule_provider/rule_sosmed.yaml"
     url: https://raw.githubusercontent.com/soesoe7/citcatcut/main/rule_provider/rule_sosmed.yaml
     interval: 86400
   Rule-Streaming:
     type: http
-    behavior: classical
+    behavior: domain
+    format: yaml
     path: "./rule_provider/rule_streaming.yaml"
     url: https://raw.githubusercontent.com/soesoe7/citcatcut/main/rule_provider/rule_streaming.yaml
     interval: 86400
   Rule-Global:
     type: http
-    behavior: classical
+    behavior: domain
+    format: yaml
     path: "./rule_provider/Global.yaml"
     url: https://raw.githubusercontent.com/soesoe7/citcatcut/main/rule_provider/Global.yaml
     interval: 86400
