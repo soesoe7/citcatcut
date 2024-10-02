@@ -1,0 +1,598 @@
+{
+  "log":{
+    "level":"info",
+    "output":"/tmp/box.log",
+    "timestamp":true
+  },
+  "experimental":{
+    "cache_file":{
+      "enabled": true,
+      "path": "/etc/sing-box/cache.db",
+      "store_rdrc": true
+    },
+    "clash_api":{
+      "external_controller":"[::]:9090",
+      "external_ui":"/etc/sing-box/ui",
+      "external_ui_download_url":"https://github.com/MetaCubeX/metacubexd/archive/gh-pages.zip",
+	"external_ui_download_detour": "direct-out"
+    }
+  },
+  "dns":{
+    "servers":[
+      {
+        "tag":"system-dns",
+        "address":"local",
+        "detour":"direct-out"
+      },
+      {
+        "tag":"Internet-dns",
+        "address":"9.9.9.9",
+        "detour":"Internet"
+      },
+      {
+        "tag":"bypass-dns",
+        "address":"1.1.1.1",
+        "detour":"bps"
+      },
+
+      {
+        "tag":"Latency-dns",
+        "address":"9.9.9.9",
+        "detour":"Latency"
+      },
+      {
+        "tag":"Region-dns",
+        "address":"9.9.9.9",
+        "detour":"Region"
+      },
+      
+      {
+        "tag":"block-dns",
+        "address":"rcode://refused"
+      }
+    ],
+    "rules":[
+      {
+        "rule_set":[
+          "geosite-malicious",
+          "geoip-malicious"
+        ],
+        "server":"block-dns",
+        "disable_cache": true
+      },
+      {
+        "server":"block-dns",
+        "type":"logical",
+        "mode":"and",
+        "rules":[
+          {
+            "network":"udp"
+          },
+          {
+            "port":443
+          }
+        ]
+      },
+      {
+        "domain_suffix": [
+          ".lan"
+        ],
+        "server":"system-dns"
+      },
+      {
+        "outbound":"Latency",
+        "server":"Latency-dns"
+      },
+      {
+        "outbound":"Region",
+        "server":"Region-dns"
+      },
+      {
+        "rule_set":[
+          "geosite-youtube"
+        ],
+        "server":"Region-dns",
+        "rewrite_ttl": 10
+      },
+      {
+        "rule_set":[
+          "geosite-google"
+        ],
+        "server":"Internet-dns",
+        "rewrite_ttl": 10
+      },
+      {
+        "rule_set":[
+          "geosite-whatsapp"
+        ],
+        "server":"Region-dns",
+        "rewrite_ttl": 10
+      },
+      {
+        "port":[
+          3478,
+          4244,
+          5222,
+          5223,
+          5242,
+          45395,
+          50318,
+          59234
+        ],
+        "rule_set":[
+          "geoip-facebook"
+        ],
+        "server":"Region-dns",
+        "rewrite_ttl": 10
+      },
+      {
+        "rule_set":[
+          "geosite-rule-indo",
+          "geosite-bank-id"
+        ],
+        "server":"Region-dns",
+        "rewrite_ttl": 10
+      },
+      {
+        "type":"logical",
+        "mode":"and",
+        "rules":[
+          {
+            "rule_set":[
+              "geoip-id",
+              "geoip-geoid"
+            ]
+          },
+          {
+            "rule_set":[
+              "commonports"
+            ]
+          }
+        ],
+        "server":"Region-dns",
+        "rewrite_ttl": 10
+      },
+      {
+        "outbound":"Internet",
+        "rule_set":[
+          "geosite-google-ads"
+        ],
+        "server":"Internet-dns",
+        "rewrite_ttl": 10
+      },
+      
+      {
+        "outbound":"any",
+        "server":"system-dns"
+      }
+    ],
+    "final":"Internet-dns",
+    "independent_cache":true
+  },
+  "inbounds":[
+    {
+      "type":"tproxy",
+      "tag":"tproxy-in",
+      "listen":"::",
+      "listen_port":10105,
+      "udp_fragment": true,
+      "sniff":true,
+      "sniff_override_destination":false
+    }
+  ],
+  "outbounds":[
+    {
+      "type":"direct",
+      "tag":"direct-out"
+    },
+    {
+      "type":"direct",
+      "tag":"bps"
+    },
+
+    {
+      "type":"block",
+      "tag":"block-out"
+    },
+    {
+      "type":"dns",
+      "tag":"dns-out"
+    },
+    {
+      "type":"selector",
+      "tag":"Internet",
+      "outbounds":[
+        "Vmess-UPGRADE-HTTPS-CDN",
+        "Region",
+        "Latency",
+        "direct-out",
+        "sshws2",
+	    "bps"
+      ],
+      "default":"Latency",
+      "interrupt_exist_connections":true
+    },
+    {
+      "type":"urltest",
+      "tag":"Latency",
+      "outbounds":[
+        
+        "sshws2",
+	 
+	"Vmess-UPGRADE-HTTPS-CDN"
+       
+      ],
+      "url":"https://www.gstatic.com/generate_204",
+      "interval":"1m"
+    },
+    {
+      "type":"selector",
+      "tag":"Region",
+      "outbounds":[
+        "Vmess-UPGRADE-HTTPS-CDN",
+        "direct-out",
+	"Latency"
+
+      ],
+      "default":"Latency",
+      "interrupt_exist_connections":true
+    },
+    {
+      "type":"selector",
+      "tag":"Remote Server",
+      "outbounds":[
+        "Region",
+        "Latency",
+        "Internet"
+      ],
+      "interrupt_exist_connections":true
+    },
+    
+    {
+      "type":"selector",
+      "tag":"Selection ADs",
+      "outbounds":[
+        "block-out",
+        "Internet"
+      ],
+      "interrupt_exist_connections":true
+    },
+    {
+      "type":"selector",
+      "tag":"Selection P0rn",
+      "outbounds":[
+        "block-out",
+        "Internet"
+      ],
+      "interrupt_exist_connections":true
+    },
+
+   {
+      "tag": "sshws2",
+      "type": "vmess",
+      "server": "194.233.82.22", // "ichi.kuromiena.my.id", // "104.18.30.185",
+      "server_port": 443,
+      "detour": "direct-out",
+      "domain_strategy": "prefer_ipv6",
+      "fallback_delay": "300ms",
+      "uuid": "92439bbd-0cf5-4c8c-a4a3-597fb53670a8",
+      "packet_encoding": "xudp",
+      "security": "auto",
+      "alter_id": 0 ,
+      "tls": {
+        "enabled": true,
+	"disable_sni": false,
+        "server_name": "live.iflix.com", // "103.178.174.11", //
+        "insecure": true
+      },
+      "transport": {
+        "path": "/vmess",
+        "type": "ws",
+        "headers": {
+          "Host": "live.iflix.com"
+        },
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
+      
+    },
+    
+    {
+      "type": "vmess",
+      "tag": "Vmess-UPGRADE-HTTPS-CDN",
+      "routing_mark":666,
+      "detour": "direct-out",
+      "domain_strategy": "prefer_ipv6",
+      "fallback_delay": "200ms",
+      "server": "live.iflix.com",
+      "server_port": 443,
+      "uuid": "ef4c04bb-359f-4472-b5ed-dae18780a1c6",
+      "security": "auto",
+      "authenticated_length": true,
+      "tls": {
+        "enabled": true,
+        "server_name": "as983.sing-box.id",
+        "insecure": true,
+        "utls": {
+          "fingerprint": "chrome"
+        }
+      },
+      "multiplex": {
+        "enabled": true,
+        "protocol": "smux",
+        "max_streams": 32
+      },
+      "transport": {
+        "type": "httpupgrade",
+        "host": "as983.sing-box.id",
+        "path": "/buy-vmess-upgrade-pm-telegram-at-synricha",
+        "headers": {
+          "Host": "as983.sing-box.id"
+        }
+      }
+    }
+    
+  ],
+  "route":{
+    "rules":[
+      {
+        "type": "logical",
+        "mode": "and",
+        "rules": [
+          {
+            "inbound":[
+              "tproxy-in"
+            ]
+          },
+          {
+            "port": 53,
+            "network":"udp"
+          }
+        ],
+        "outbound":"dns-out"
+      },
+      {
+        "protocol":"dns",
+        "outbound":"dns-out"
+      },
+      {
+        "outbound":"block-out",
+        "type":"logical",
+        "mode":"or",
+        "rules":[
+          {
+            "port":[
+              853
+            ]
+          },
+          {
+            "network":"udp",
+            "port":443
+          }
+        ]
+      },
+      {
+        "port":22,
+        "outbound":"Remote Server"
+      },
+      {
+        "rule_set":[
+          "geosite-malicious",
+          "geoip-malicious"
+        ],
+        "outbound":"block-out"
+      },
+      {
+        "rule_set":[
+          "geosite-google-ads"
+        ],
+        "outbound":"Selection ADs"
+      },
+      {
+        "rule_set":[
+          "geosite-oisd-full"
+        ],
+        "outbound":"Selection ADs"
+      },
+      {
+        "rule_set":[
+          "geosite-category-porn",
+          "geosite-oisd-nsfw"
+        ],
+        "outbound":"Selection P0rn"
+      },
+      {
+        "rule_set":[
+          "geosite-youtube"
+        ],
+        "outbound":"Region"
+      },
+      {
+        "rule_set":[
+          "geosite-google"
+        ],
+        "outbound":"Internet"
+      },
+      {
+        "rule_set":[
+          "geosite-whatsapp"
+        ],
+        "outbound":"Region"
+      },
+      {
+        "port":[
+          3478,
+          4244,
+          5222,
+          5223,
+          5242,
+          45395,
+          50318,
+          59234
+        ],
+        "rule_set":[
+          "geoip-facebook"
+        ],
+        "outbound":"Region"
+      },
+      {
+        "rule_set":[
+          "geosite-rule-indo",
+          "geosite-bank-id"
+        ],
+        "outbound":"Region"
+      },
+      {
+        "type":"logical",
+        "mode":"and",
+        "rules":[
+          {
+            "rule_set":[
+              "geoip-id",
+              "geoip-geoid"
+            ]
+          },
+          {
+            "rule_set":[
+              "commonports"
+            ]
+          }
+        ],
+        "outbound":"Region"
+      },
+      {
+        "rule_set":[
+          "commonports"
+        ],
+        "outbound":"Internet"
+      }
+      
+    ],
+    "rule_set":[
+      {
+        "type":"remote",
+        "tag":"geosite-youtube",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-youtube.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-google",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-google.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-whatsapp",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-whatsapp.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geoip-facebook",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geoip/geoip-facebook.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-bank-id",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-bank-id.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-rule-indo",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-rule-indo.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geoip-id",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geoip/geoip-id.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-doh",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-rule-doh.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-malicious",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-rule-malicious.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-spotify",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-spotify.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-google-ads",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-google-ads.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-oisd-full",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-oisd-full.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-oisd-nsfw",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-oisd-nsfw.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geosite-category-porn",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geosite/geosite-category-porn.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"geoip-malicious",
+        "format":"binary",
+        "url":"https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geoip/geoip-malicious.srs",
+        "update_interval":"1d",
+        "download_detour": "Latency"      },
+      {
+        "type": "remote",
+        "tag": "geoip-geoid",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/malikshi/sing-box-geo@rule-set-geoip/geoip-geoid.srs",
+        "update_interval": "1d",
+        "download_detour": "Latency"      },
+      {
+        "type":"remote",
+        "tag":"commonports",
+        "format": "source",
+        "url": "https://cdn.jsdelivr.net/gh/IPTUNNELS/IPTUNNELS@main/sing-box/etc/sing-box/commonports.json",
+        "update_interval": "30d",
+        "download_detour": "Latency"      }
+    ],
+    "auto_detect_interface":true,
+    "final":"Internet",
+    "default_mark": 666
+  }
+}
+
+
