@@ -1,9 +1,23 @@
 cd /etc/opkg/
-cp distfeeds.conf distfeeds.conf.old
-cp distfeeds.conf.bak distfeeds.conf
+cp /etc/opkg/distfeeds.conf /etc/opkg/distfeeds.conf.old
+cp /etc/opkg/distfeeds.conf.bak /etc/opkg/distfeeds.conf
 
 opkg update
 opkg install  openssh-sftp-server  kmod-inet-diag kmod-netlink-diag kmod-tun iptables-nft kmod-nft-tproxy kmod-nft-tproxy kmod-nft-socket sing-box 
 
-opkg update && opkg install block-mount kmod-usb-storage kmod-fs-ext4
+#untuk install exroot
+opkg update && opkg install block-mount kmod-usb-storage kmod-fs-ext4 openssh-sftp-server
+
+# extroot stuff...
+mkdir /mnt/sda2
+mount /dev/sda2 /mnt/sda2
+mkdir -p /tmp/cproot
+mount --bind / /tmp/cproot
+tar -C /tmp/cproot -cvf - . | tar -C /mnt/sda2 -xf -
+umount /tmp/cproot
+
+# untuk upgrade opkg 
+ sed -i -e "/^lists_dir\s/s:/var/opkg-lists$:/usr/lib/opkg/lists:" /etc/opkg.conf
+opkg update
+opkg list-upgradable | cut -f 1 -d ' ' | xargs opkg upgrade
 
