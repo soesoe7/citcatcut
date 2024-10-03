@@ -1,1 +1,9 @@
+cd /etc/opkg/
+cp distfeeds.conf distfeeds.conf.old
+cp distfeeds.conf.bak distfeeds.conf
+
+opkg update
+opkg install  openssh-sftp-server  kmod-inet-diag kmod-netlink-diag kmod-tun iptables-nft kmod-nft-tproxy kmod-nft-tproxy kmod-nft-socket sing-box 
+
+opkg update && opkg install block-mount kmod-usb-storage kmod-fs-ext4
 
